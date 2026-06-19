@@ -1,0 +1,41 @@
+# ========================
+# Owebku .gitignore
+# ========================
+
+# --- Dependencies ---
+vendor/
+node_modules/
+
+# --- Environment / Config ---
+.env
+.env.*
+
+# --- Storage (user data, upload, quarantine) ---
+storage/quarantine/*
+storage/sessions/*
+storage/workspaces/*
+storage/logs/*
+AGENTS.md
+!storage/quarantine/.gitkeep
+!storage/sessions/.gitkeep
+!storage/workspaces/.gitkeep
+!storage/logs/.gitkeep
+
+# --- Published Sites (user output) ---
+sites/
+
+# --- IDE / Editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- OS ---
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# --- PHP ---
+*.phar
+composer.lock
