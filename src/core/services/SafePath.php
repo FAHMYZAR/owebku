@@ -3,9 +3,6 @@ namespace Core\Services;
 
 class SafePath
 {
-    /**
-     * Normalize a relative path.
-     */
     public static function normalize(string $path): string
     {
         // Ganti backslash dengan forward slash

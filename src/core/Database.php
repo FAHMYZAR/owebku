@@ -40,9 +40,7 @@ class Database
         return self::$instance;
     }
 
-    /**
-     * Execute a query with bindings
-     */
+    //Execute a query with bindings
     public static function query(string $sql, array $params = []): PDOStatement
     {
         $stmt = self::getConnection()->prepare($sql);

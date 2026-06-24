@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Global Library | Static PDF Library</title>
+  <meta name="description" content="Web statis perpustakaan dunia dengan tema dashboard seperti Discord, lengkap dengan preview PDF iframe." />
+  <link rel="icon" type="image/svg+xml" href="images/logo.svg" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="server-rail" aria-label="Navigasi utama">
+      <a class="server-icon active" href="#home" title="Global Library">
+        <img src="images/logo.svg" alt="Logo Global Library" />
+      </a>
+      <a class="server-icon" href="#collections" title="Koleksi">📚</a>
+      <a class="server-icon" href="#reader" title="Reader">📖</a>
+      <a class="server-icon" href="#about" title="Tentang">🌐</a>
+    </aside>
+
+    <aside class="channel-panel">
+      <div class="brand-block">
+        <img src="images/logo.svg" alt="Logo" />
+        <div>
+          <strong>Global Library</strong>
+          <span>Static PDF Archive</span>
+        </div>
+      </div>
+
+      <nav class="channel-list" aria-label="Kategori koleksi">
+        <button class="channel is-active" data-filter="all"><span>#</span> Semua Buku</button>
+        <button class="channel" data-filter="History"><span>#</span> History</button>
+        <button class="channel" data-filter="Culture"><span>#</span> Culture</button>
+        <button class="channel" data-filter="Digital"><span>#</span> Digital</button>
+        <button class="channel" data-filter="Children"><span>#</span> Children</button>
+        <button class="channel" data-filter="Science"><span>#</span> Science</button>
+      </nav>
+
+      <div class="mini-card">
+        <span class="pulse"></span>
+        <p><strong>Status:</strong> semua PDF dibaca dari folder lokal <code>assets/pdfs</code>.</p>
+      </div>
+    </aside>
+
+    <main class="content-area" id="home">
+      <section class="hero-card">
+        <div class="hero-copy">
+          <span class="eyebrow">Perpustakaan statis lintas dunia</span>
+          <h1>Dashboard buku PDF elegan dengan rasa komunitas Discord.</h1>
+          <p>
+            Cari koleksi, pilih buku, lalu baca langsung lewat iframe PDF viewer.
+            Cocok untuk katalog perpustakaan digital, arsip sekolah, atau landing page koleksi e-book legal.
+          </p>
+          <div class="hero-actions">
+            <a href="#collections" class="btn primary">Jelajahi Koleksi</a>
+            <a href="#reader" class="btn ghost">Buka Reader</a>
+          </div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <img src="images/world-library.svg" alt="" />
+        </div>
+      </section>
+
+      <section class="toolbar" id="collections">
+        <div>
+          <span class="eyebrow">Collection</span>
+          <h2>Koleksi Buku Dunia</h2>
+        </div>
+        <label class="search-box">
+          <span>⌕</span>
+          <input id="searchInput" type="search" placeholder="Cari judul, wilayah, kategori..." autocomplete="off" />
+        </label>
+      </section>
+
+      <section class="stats-grid" aria-label="Statistik koleksi">
+        <article><strong id="totalBooks">0</strong><span>Total Buku</span></article>
+        <article><strong>6</strong><span>PDF Lokal</span></article>
+        <article><strong>0</strong><span>Backend Needed</span></article>
+      </section>
+
+      <section class="book-grid" id="bookGrid" aria-live="polite"></section>
+    </main>
+
+    <aside class="reader-panel" id="reader">
+      <div class="reader-header">
+        <div>
+          <span class="eyebrow">PDF Preview</span>
+          <h2 id="readerTitle">Pilih Buku</h2>
+        </div>
+        <a id="openPdf" class="icon-btn" href="#" target="_blank" rel="noopener" title="Buka PDF tab baru">↗</a>
+      </div>
+
+      <div class="reader-meta" id="readerMeta">
+        Pilih salah satu buku untuk menampilkan PDF di iframe.
+      </div>
+
+      <div class="iframe-shell">
+        <iframe id="pdfFrame" title="PDF Reader" src="assets/pdfs/katalog-perpustakaan-dunia.pdf"></iframe>
+      </div>
+    </aside>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

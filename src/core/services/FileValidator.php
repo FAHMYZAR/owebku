@@ -22,9 +22,6 @@ class FileValidator
         'zip', 'rar', '7z', 'tar', 'gz'
     ];
 
-    /**
-     * Cek path entry dalam zip
-     */
     public static function validateZipEntryPath(string $path): array
     {
         // 1. Cek null byte

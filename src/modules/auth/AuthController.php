@@ -77,7 +77,6 @@ class AuthController extends Controller
             'password' => password_hash($password, PASSWORD_DEFAULT),
             'full_name' => $username,
             'role' => 'user',
-            'is_active' => 1,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
         ]);
@@ -112,11 +111,6 @@ class AuthController extends Controller
 
         if (!$user || !password_verify($password, $user['password'])) {
             $_SESSION['flash_error'] = 'Username atau password salah.';
-            redirect_to('login');
-        }
-
-        if ((int) $user['is_active'] !== 1) {
-            $_SESSION['flash_error'] = 'Akun tidak aktif.';
             redirect_to('login');
         }
 
