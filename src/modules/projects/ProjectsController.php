@@ -32,6 +32,26 @@ class ProjectsController extends Controller
         $basePublished = app_config('sites_path') . DIRECTORY_SEPARATOR . auth_user()['username'] . DIRECTORY_SEPARATOR . $slug;
         $publicUrl = site_url("sites/" . auth_user()['username'] . "/" . $slug);
 
+        // Buat folder fisik sebelum insert DB agar error permission tidak menghasilkan response HTML/warning.
+        if (!is_dir($baseWorkspace) && !@mkdir($baseWorkspace, 0775, true) && !is_dir($baseWorkspace)) {
+            $this->json([
+                'success' => false,
+                'message' => 'Gagal membuat folder workspace. Periksa permission folder storage/workspaces di server.'
+            ], 500);
+        }
+
+        $initialFile = $baseWorkspace . DIRECTORY_SEPARATOR . 'index.html';
+        $initialContent = "<h1>Welcome to {$name}</h1>\n<p>Start editing!</p>";
+        if (@file_put_contents($initialFile, $initialContent) === false) {
+            $this->deleteDir($baseWorkspace);
+            $this->json([
+                'success' => false,
+                'message' => 'Gagal membuat file awal project. Periksa permission folder workspace di server.'
+            ], 500);
+        }
+
+        $fileSize = filesize($initialFile) ?: 0;
+
         $id = $this->projects->insert([
             'id_user' => $userId,
             'project_name' => $name,
@@ -43,19 +63,10 @@ class ProjectsController extends Controller
         ]);
 
         if ($id) {
-            // Buat folder fisik
-            if (!is_dir($baseWorkspace)) {
-                mkdir($baseWorkspace, 0777, true);
-            }
-            
-            // Generate index.html awal
-            $initialFile = $baseWorkspace . DIRECTORY_SEPARATOR . 'index.html';
-            file_put_contents($initialFile, "<h1>Welcome to {$name}</h1>\n<p>Start editing!</p>");
-            
             // Simpan info ke DB files
             $this->projects->query(
                 "INSERT INTO project_files (id_project, file_name, relative_path, file_extension, is_editable, file_size) VALUES (?, ?, ?, ?, ?, ?)",
-                [$id, 'index.html', 'index.html', 'html', 1, filesize($initialFile)]
+                [$id, 'index.html', 'index.html', 'html', 1, $fileSize]
             );
 
             // Log activity
@@ -68,6 +79,7 @@ class ProjectsController extends Controller
             $this->json(['success' => true, 'message' => 'Project berhasil dibuat.', 'data' => ['redirect' => site_url('dashboard')]]);
         }
 
+        $this->deleteDir($baseWorkspace);
         $this->json(['success' => false, 'message' => 'Gagal membuat project.'], 500);
     }
 
