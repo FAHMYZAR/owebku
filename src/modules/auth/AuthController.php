@@ -74,7 +74,7 @@ class AuthController extends Controller
         $userId = $this->users->createUser([
             'email' => $email,
             'username' => $username,
-            'password' => password_hash($password, PASSWORD_DEFAULT),
+            'password' => $password,
             'full_name' => $username,
             'role' => 'user',
             'created_at' => date('Y-m-d H:i:s'),
