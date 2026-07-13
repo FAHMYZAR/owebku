@@ -75,6 +75,8 @@ class PublishController extends Controller
             ], 500);
         }
 
+        @chmod($dst, 0755);
+
         $files = array_diff(scandir($src), ['.', '..']);
         foreach ($files as $file) {
             $srcPath = $src . DIRECTORY_SEPARATOR . $file;
@@ -82,11 +84,14 @@ class PublishController extends Controller
 
             if (is_dir($srcPath)) {
                 $this->copyDir($srcPath, $dstPath);
+                @chmod($dstPath, 0755);
             } elseif (!@copy($srcPath, $dstPath)) {
                 $this->json([
                     'success' => false,
                     'message' => 'Gagal menyalin file publish. Periksa permission folder sites di server.'
                 ], 500);
+            } else {
+                @chmod($dstPath, 0644);
             }
         }
     }
