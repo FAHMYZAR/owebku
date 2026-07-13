@@ -67,18 +67,26 @@ class PublishController extends Controller
         if (is_dir($dst)) {
             $this->deleteDir($dst);
         }
-        
-        mkdir($dst, 0777, true);
-        
+
+        if (!@mkdir($dst, 0775, true) && !is_dir($dst)) {
+            $this->json([
+                'success' => false,
+                'message' => 'Gagal membuat folder publish. Periksa permission folder sites di server.'
+            ], 500);
+        }
+
         $files = array_diff(scandir($src), ['.', '..']);
         foreach ($files as $file) {
             $srcPath = $src . DIRECTORY_SEPARATOR . $file;
             $dstPath = $dst . DIRECTORY_SEPARATOR . $file;
-            
+
             if (is_dir($srcPath)) {
                 $this->copyDir($srcPath, $dstPath);
-            } else {
-                copy($srcPath, $dstPath);
+            } elseif (!@copy($srcPath, $dstPath)) {
+                $this->json([
+                    'success' => false,
+                    'message' => 'Gagal menyalin file publish. Periksa permission folder sites di server.'
+                ], 500);
             }
         }
     }
