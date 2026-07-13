@@ -36,7 +36,31 @@ Owebku adalah aplikasi web berbasis **PHP Native MVC** untuk membuat, mengedit, 
 
 ---
 
-## 3. Kebutuhan Sistem
+## 3. Tampilan Aplikasi
+
+Screenshot aplikasi disimpan di folder `screenshoot/`.
+
+### 3.1 Dashboard
+
+![Dashboard Owebku](screenshoot/dashboard.png)
+
+Dashboard menampilkan ringkasan project, status publish/draft, storage akun, aktivitas terbaru, pencarian project, dan aksi project.
+
+### 3.2 Editor Project
+
+![Editor Project Owebku](screenshoot/OpenprojectTeksEditormanager.png)
+
+Editor project menyediakan file manager, text editor berbasis browser, aksi file/folder, upload/import, dan preview project.
+
+### 3.3 Contoh Website Hasil Publish
+
+![Sample Published Website](screenshoot/samplepublishedweb.png)
+
+Website yang sudah dipublish disalin dari workspace draft ke folder publik `sites/{username}/{slug}/` dan dapat dibuka melalui public URL project.
+
+---
+
+## 4. Kebutuhan Sistem
 
 | Komponen | Kebutuhan |
 |---|---|
@@ -59,9 +83,9 @@ Konfigurasi database berada di `src/config/database.php`.
 
 ---
 
-## 4. Menjalankan Project
+## 5. Menjalankan Project
 
-### 4.1 Siapkan database
+### 5.1 Siapkan database
 
 Buat database MySQL/MariaDB:
 
@@ -75,7 +99,7 @@ Lalu sesuaikan credential di:
 src/config/database.php
 ```
 
-### 4.2 Pastikan folder runtime tersedia
+### 5.2 Pastikan folder runtime tersedia
 
 ```text
 storage/
@@ -88,7 +112,7 @@ public/uploads/
 
 Folder tersebut digunakan untuk log, workspace user, karantina ZIP, output publish, dan upload publik.
 
-### 4.3 Jalankan server lokal
+### 5.3 Jalankan server lokal
 
 Dari root project:
 
@@ -104,13 +128,14 @@ http://localhost:8000
 
 ---
 
-## 5. Struktur Kode
+## 6. Struktur Kode
 
 ```text
 owebku/
 ├── index.php                  # Front controller, autoload, dan daftar route
 ├── README.md                  # Dokumentasi teknikal project
 ├── AGENTS.md                  # Panduan kerja AI agent di repo ini
+├── screenshoot/               # Screenshot dokumentasi README
 ├── public/                    # Aset publik aplikasi
 │   ├── assets/
 │   │   ├── css/               # CSS aplikasi
@@ -134,7 +159,7 @@ owebku/
 
 ---
 
-## 6. Arsitektur Kode
+## 7. Arsitektur Kode
 
 Project memakai pola **Front Controller + MVC**.
 
@@ -148,7 +173,7 @@ Project memakai pola **Front Controller + MVC**.
 | View | `src/views/` | Render HTML dengan PHP native |
 | Helper | `src/helpers/utils.php` | Auth helper, CSRF, redirect, URL, escaping, flash message |
 
-### 6.1 Alur request
+### 7.1 Alur request
 
 1. Browser mengakses route aplikasi.
 2. Request masuk ke `index.php`.
@@ -162,7 +187,7 @@ Project memakai pola **Front Controller + MVC**.
 
 ---
 
-## 7. Modul Utama
+## 8. Modul Utama
 
 | Modul | Path | File utama | Fungsi |
 |---|---|---|---|
@@ -174,11 +199,11 @@ Project memakai pola **Front Controller + MVC**.
 
 ---
 
-## 8. Daftar Routing
+## 9. Daftar Routing
 
 Routing didefinisikan langsung di `index.php`. Router saat ini mendukung `GET` dan `POST`. Parameter dinamis memakai format `{nama}` seperti `/editor/{projectId}`.
 
-### 8.1 Route halaman
+### 9.1 Route halaman
 
 | Method | Path | Controller | Fungsi |
 |---|---|---|---|
@@ -191,7 +216,7 @@ Routing didefinisikan langsung di `index.php`. Router saat ini mendukung `GET` d
 | GET | `/editor/{projectId}` | `FilesController::editor` | Editor project |
 | GET | `/logout` | `AuthController::logout` | Logout |
 
-### 8.2 Route aksi
+### 9.2 Route aksi
 
 | Method | Path | Controller | Fungsi |
 |---|---|---|---|
@@ -213,7 +238,7 @@ Routing didefinisikan langsung di `index.php`. Router saat ini mendukung `GET` d
 
 ---
 
-## 9. Database
+## 10. Database
 
 Database utama bernama `webdrop_db`. Aplikasi memakai PDO dengan prepared statement.
 
@@ -238,7 +263,7 @@ projects 1..n publish_jobs
 
 ---
 
-## 10. Storage dan File System
+## 11. Storage dan File System
 
 | Path | Fungsi |
 |---|---|
@@ -248,7 +273,7 @@ projects 1..n publish_jobs
 | `sites/{username}/{slug}/` | Output website setelah publish |
 | `public/uploads/` | Upload publik aplikasi |
 
-### 10.1 Alur project baru
+### 11.1 Alur project baru
 
 1. User membuat project dari dashboard.
 2. Sistem membuat slug project.
@@ -257,7 +282,7 @@ projects 1..n publish_jobs
 5. File awal seperti `index.html` dibuat.
 6. Metadata file dicatat ke `project_files`.
 
-### 10.2 Alur edit file
+### 11.2 Alur edit file
 
 1. User membuka `/editor/{projectId}`.
 2. Sistem memvalidasi session dan owner project.
@@ -267,7 +292,7 @@ projects 1..n publish_jobs
 6. Perubahan disimpan melalui `/files/save-content`.
 7. Metadata project dan activity log diperbarui.
 
-### 10.3 Alur import ZIP
+### 11.3 Alur import ZIP
 
 1. User upload ZIP melalui `/files/import-zip`.
 2. ZIP diekstrak ke `storage/quarantine/`.
@@ -276,7 +301,7 @@ projects 1..n publish_jobs
 5. Metadata file disimpan ke database.
 6. Jika gagal, proses dibatalkan dan data sementara dibersihkan.
 
-### 10.4 Alur publish
+### 11.4 Alur publish
 
 1. User menjalankan publish melalui `/publish`.
 2. Sistem memvalidasi auth, CSRF, dan owner project.
@@ -290,7 +315,7 @@ projects 1..n publish_jobs
 
 ---
 
-## 11. Keamanan Aplikasi
+## 12. Keamanan Aplikasi
 
 - Auth memakai session PHP native.
 - Password memakai `password_hash()` dan `password_verify()`.
@@ -305,16 +330,16 @@ projects 1..n publish_jobs
 
 ---
 
-## 12. Konvensi Pengembangan
+## 13. Konvensi Pengembangan
 
-### 12.1 Route
+### 13.1 Route
 
 - Tambahkan route baru di `index.php`.
 - Gunakan method `GET` atau `POST` kecuali `Router` dikembangkan lagi.
 - Route yang butuh login wajib memanggil `require_auth()`.
 - Route `POST` yang mengubah state wajib memanggil `verify_csrf()`.
 
-### 12.2 Controller
+### 13.2 Controller
 
 - Simpan controller di `src/modules/{nama-modul}/`.
 - Controller mewarisi `Core\Controller`.
@@ -322,21 +347,21 @@ projects 1..n publish_jobs
 - Gunakan `$this->json()` untuk response JSON.
 - Controller sebaiknya berisi orkestrasi, bukan query SQL panjang atau logic filesystem berat.
 
-### 12.3 Model
+### 13.3 Model
 
 - Model mewarisi `Core\Model`.
 - Simpan query database di model.
 - Gunakan prepared statement.
 - Jangan memasukkan input user langsung ke string SQL.
 
-### 12.4 Service
+### 13.4 Service
 
 - Simpan logic file/path/ZIP/quota di `src/core/services/`.
 - Gunakan `SafePath` untuk validasi path.
 - Gunakan `FileValidator` untuk validasi upload.
 - Gunakan `ZipImportService` untuk import ZIP.
 
-### 12.5 View dan Frontend
+### 13.5 View dan Frontend
 
 - Simpan view di `src/views/`.
 - Escape output user dengan `e()`.
@@ -347,7 +372,7 @@ projects 1..n publish_jobs
 
 ---
 
-## 13. Alur End-to-End
+## 14. Alur End-to-End
 
 1. User membuka aplikasi.
 2. User register atau login.
