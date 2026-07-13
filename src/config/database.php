@@ -3,7 +3,7 @@ return [
     'host' => 'mysql', //localhost
     'port' => '3306',
     'dbname' => 'dbowebku',
-    'username' => 'owebkuuser',
-    'password' => 'owebkunih1233#',
+    'username' => 'root',
+    'password' => '',
     'charset' => 'utf8mb4'
 ];
