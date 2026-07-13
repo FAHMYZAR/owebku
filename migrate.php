@@ -79,7 +79,7 @@ function migrate(PDO $pdo): void
     ensureIndex($pdo, 'users', 'idx_users_email', 'email');
     ensureIndex($pdo, 'projects', 'idx_projects_id_user', 'id_user');
     ensureIndex($pdo, 'projects', 'idx_projects_slug', 'slug');
-    ensureIndex($pdo, 'project_files', 'idx_project_files_project_path', 'id_project, relative_path');
+    ensureIndex($pdo, 'project_files', 'idx_project_files_project_path', 'id_project, relative_path(191)');
     ensureIndex($pdo, 'activity_logs', 'idx_activity_logs_user_created', 'id_user, created_at');
     ensureIndex($pdo, 'publish_jobs', 'idx_publish_jobs_project_user', 'id_project, id_user');
 }
