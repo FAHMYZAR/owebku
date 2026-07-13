@@ -9,19 +9,22 @@ node_modules/
 .env
 .env.*
 
-# --- Storage (user data, upload, quarantine) ---
-# storage/quarantine/*
-# storage/sessions/*
-# storage/workspaces/*
-# storage/logs/*
-AGENTS.md
-# !storage/quarantine/.gitkeep
-# !storage/sessions/.gitkeep
-# !storage/workspaces/.gitkeep
-# !storage/logs/.gitkeep
+# --- Storage (runtime/user data) ---
+storage/quarantine/*
+storage/sessions/*
+storage/workspaces/*
+storage/logs/*
+!storage/quarantine/.gitkeep
+!storage/sessions/.gitkeep
+!storage/workspaces/.gitkeep
+!storage/logs/.gitkeep
 
 # --- Published Sites (user output) ---
-# sites/
+sites/*
+!sites/.gitkeep
+
+# --- Local agent docs ---
+AGENTS.md
 
 # --- IDE / Editor ---
 .vscode/
