@@ -1,6 +1,6 @@
 <?php
 return [
-    'host' => 'localhost',
+    'host' => 'mysql', //localhost
     'port' => '3306',
     'dbname' => 'dbowebku',
     'username' => 'root',
