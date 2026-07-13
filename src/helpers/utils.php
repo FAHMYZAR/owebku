@@ -17,8 +17,20 @@ function base_url(string $path = ''): string
     
     // Auto detect base URL jika config kosong
     if (empty($base)) {
-        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'];
+        $forwardedProto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '';
+        $forwardedHost = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? '';
+        $cfVisitor = $_SERVER['HTTP_CF_VISITOR'] ?? '';
+        $https = $_SERVER['HTTPS'] ?? '';
+
+        if ($forwardedProto !== '') {
+            $protocol = strtolower(explode(',', $forwardedProto)[0]) === 'https' ? 'https' : 'http';
+        } elseif (stripos($cfVisitor, '"scheme":"https"') !== false) {
+            $protocol = 'https';
+        } else {
+            $protocol = ($https === 'on' || $https === '1') ? 'https' : 'http';
+        }
+
+        $host = $forwardedHost !== '' ? trim(explode(',', $forwardedHost)[0]) : ($_SERVER['HTTP_HOST'] ?? 'localhost');
         
         // Cari posisi script di docroot
         $script = dirname($_SERVER['SCRIPT_NAME']);
