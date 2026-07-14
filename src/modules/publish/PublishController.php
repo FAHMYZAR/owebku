@@ -2,6 +2,8 @@
 namespace Modules\Publish;
 
 use Core\Controller;
+use Core\Services\FileValidator;
+use Core\Services\SafePath;
 use Modules\Projects\Project;
 
 class PublishController extends Controller
@@ -33,6 +35,11 @@ class PublishController extends Controller
 
         $workspace = rtrim($project['workspace_path'], DIRECTORY_SEPARATOR);
         $published = rtrim($project['published_path'], DIRECTORY_SEPARATOR);
+        [$workspaceOk, $workspaceMessage] = SafePath::validateOwnedDirectory($workspace, app_config('workspace_path'));
+        [$publishedOk, $publishedMessage] = SafePath::validateOwnedDirectory($published, app_config('sites_path'));
+        if (!$workspaceOk || (!$publishedOk && file_exists($published))) {
+            $this->json(['success' => false, 'message' => $workspaceOk ? $publishedMessage : $workspaceMessage], 400);
+        }
 
         if (!is_dir($workspace)) {
             $this->json(['success' => false, 'message' => 'Workspace kosong.'], 400);
@@ -82,15 +89,27 @@ class PublishController extends Controller
             $srcPath = $src . DIRECTORY_SEPARATOR . $file;
             $dstPath = $dst . DIRECTORY_SEPARATOR . $file;
 
+            if (is_link($srcPath)) {
+                $this->json(['success' => false, 'message' => 'Symlink tidak boleh dipublish.'], 400);
+            }
+
             if (is_dir($srcPath)) {
                 $this->copyDir($srcPath, $dstPath);
                 @chmod($dstPath, 0755);
-            } elseif (!@copy($srcPath, $dstPath)) {
-                $this->json([
-                    'success' => false,
-                    'message' => 'Gagal menyalin file publish. Periksa permission folder sites di server.'
-                ], 500);
             } else {
+                if (!FileValidator::validateExtension($file)) {
+                    $this->json(['success' => false, 'message' => "File {$file} tidak aman untuk dipublish."], 400);
+                }
+                [$contentOk, $contentMessage] = FileValidator::validateFileContent($srcPath);
+                if (!$contentOk) {
+                    $this->json(['success' => false, 'message' => "File {$file} ditolak: {$contentMessage}"], 400);
+                }
+                if (!@copy($srcPath, $dstPath)) {
+                    $this->json([
+                        'success' => false,
+                        'message' => 'Gagal menyalin file publish. Periksa permission folder sites di server.'
+                    ], 500);
+                }
                 @chmod($dstPath, 0644);
             }
         }
@@ -98,10 +117,18 @@ class PublishController extends Controller
 
     private function deleteDir(string $dirPath): void
     {
-        $files = array_diff(scandir($dirPath), ['.', '..']);
-        foreach ($files as $file) {
+        if (!is_dir($dirPath) || is_link($dirPath)) {
+            return;
+        }
+        foreach (array_diff(scandir($dirPath) ?: [], ['.', '..']) as $file) {
             $path = $dirPath . DIRECTORY_SEPARATOR . $file;
-            is_dir($path) ? $this->deleteDir($path) : unlink($path);
+            if (is_link($path)) {
+                unlink($path);
+            } elseif (is_dir($path)) {
+                $this->deleteDir($path);
+            } elseif (is_file($path)) {
+                unlink($path);
+            }
         }
         rmdir($dirPath);
     }

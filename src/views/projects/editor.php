@@ -113,7 +113,7 @@ function getFileIcon(array $file): string {
                 <textarea data-editor class="min-h-0 flex-1 resize-none border-0 bg-[#f9f9f9] p-4 font-mono text-sm leading-6 text-[#161616] outline-none" spellcheck="false"><?php echo e($selected_content); ?></textarea>
                 <div data-preview-pane class="hidden flex-1 border-l border-[#e0e0e0] bg-white">
                     <?php if (!empty($preview_url)): ?>
-                        <iframe data-preview-iframe src="<?php echo e($preview_url); ?>" class="h-full w-full border-0"></iframe>
+                        <iframe data-preview-iframe src="<?php echo e($preview_url); ?>" sandbox="allow-scripts" referrerpolicy="no-referrer" class="h-full w-full border-0"></iframe>
                     <?php else: ?>
                         <div class="flex h-full items-center justify-center text-sm text-[#8d8d8d]">Publish dulu untuk melihat preview.</div>
                     <?php endif; ?>

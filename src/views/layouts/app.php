@@ -40,7 +40,10 @@ require __DIR__ . '/header.php';
                     <nav class="hidden items-center gap-1 text-sm font-medium text-[#525252] md:flex">
                         <a href="<?php echo site_url('dashboard'); ?>" class="px-3 py-2 hover:bg-[#f4f4f4] hover:text-[#161616]">Dashboard</a>
                         <a href="<?php echo site_url('profile'); ?>" class="px-3 py-2 hover:bg-[#f4f4f4] hover:text-[#161616]">Profile</a>
-                        <a href="<?php echo site_url('logout'); ?>" class="px-3 py-2 text-[#da1e28] hover:bg-[#f4f4f4]">Logout</a>
+                        <form method="post" action="<?php echo site_url('logout'); ?>">
+                            <?php echo csrf_field(); ?>
+                            <button type="submit" class="px-3 py-2 text-[#da1e28] hover:bg-[#f4f4f4]">Logout</button>
+                        </form>
                     </nav>
                 <?php endif; ?>
             </div>

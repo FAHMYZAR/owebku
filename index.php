@@ -1,4 +1,15 @@
 <?php
+
+require __DIR__ . '/src/config/environment.php';
+load_environment(__DIR__ . '/.env');
+
+$isProduction = (getenv('APP_ENV') ?: 'production') === 'production';
+ini_set('session.use_strict_mode', '1');
+ini_set('session.use_only_cookies', '1');
+ini_set('session.cookie_httponly', '1');
+ini_set('session.cookie_secure', $isProduction ? '1' : '0');
+ini_set('session.cookie_samesite', getenv('SESSION_COOKIE_SAMESITE') ?: 'Lax');
+session_name(getenv('SESSION_COOKIE_NAME') ?: 'owebku_session');
 session_start();
 
 spl_autoload_register(function ($class) {
@@ -47,7 +58,7 @@ $router->get('/register', [AuthController::class, 'register']);
 $router->post('/register', [AuthController::class, 'doRegister']);
 $router->get('/profile', [AuthController::class, 'profile']);
 $router->post('/profile/update-password', [AuthController::class, 'updatePassword']);
-$router->get('/logout', [AuthController::class, 'logout']);
+$router->post('/logout', [AuthController::class, 'logout']);
 
 // Routes Dashboard
 $router->get('/dashboard', [DashboardController::class, 'index']);

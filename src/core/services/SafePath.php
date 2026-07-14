@@ -48,12 +48,69 @@ class SafePath
             return [false, 'Path traversal tidak diperbolehkan.'];
         }
 
+        foreach ($segments as $segment) {
+            if ($segment === '' || $segment === '.' || preg_match('/[\x00-\x1F\x7F]/', $segment)) {
+                return [false, 'Nama path tidak valid.'];
+            }
+            if (preg_match('/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i', $segment)) {
+                return [false, 'Nama file sistem tidak diperbolehkan.'];
+            }
+        }
+
         if (strlen($normalizedSlash) > 255) {
             return [false, 'Path terlalu panjang.'];
         }
 
         if (substr_count(rtrim($normalizedSlash, '/'), '/') > 10) {
             return [false, 'Folder depth maksimal 10.'];
+        }
+
+        return [true, ''];
+    }
+
+    /**
+     * Pastikan path database berada di bawah root aplikasi dan bukan symlink.
+     */
+    public static function validateOwnedDirectory(string $path, string $rootPath): array
+    {
+        $realRoot = realpath($rootPath);
+        $realPath = realpath($path);
+        if (!$realRoot || !$realPath || is_link($path)) {
+            return [false, 'Direktori project tidak valid.'];
+        }
+
+        $root = strtolower(rtrim($realRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
+        $candidate = strtolower(rtrim($realPath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
+        if (!str_starts_with($candidate, $root)) {
+            return [false, 'Direktori project berada di luar root aplikasi.'];
+        }
+
+        return [true, ''];
+    }
+
+    /**
+     * Validasi target yang mungkin belum ada dengan memeriksa parent terdekat.
+     */
+    public static function validateDestinationPath(string $path, string $rootPath): array
+    {
+        $realRoot = realpath($rootPath);
+        if (!$realRoot || strpos($path, "\0") !== false) {
+            return [false, 'Root atau target tidak valid.'];
+        }
+
+        $root = strtolower(rtrim($realRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
+        $candidate = strtolower(rtrim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
+        if (!str_starts_with($candidate, $root)) {
+            return [false, 'Target berada di luar root aplikasi.'];
+        }
+
+        $parent = dirname($path);
+        while (!file_exists($parent) && dirname($parent) !== $parent) {
+            $parent = dirname($parent);
+        }
+        $realParent = realpath($parent);
+        if (!$realParent || is_link($parent) || !str_starts_with(strtolower(rtrim($realParent, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR), $root)) {
+            return [false, 'Parent target tidak aman.'];
         }
 
         return [true, ''];

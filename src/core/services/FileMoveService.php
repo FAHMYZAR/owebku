@@ -5,6 +5,8 @@ use Core\Database;
 use Modules\Projects\Project;
 use Exception;
 
+
+
 class FileMoveService
 {
     private Project $projects;
@@ -40,8 +42,12 @@ class FileMoveService
 
         $basePath = rtrim($workspacePath, DIRECTORY_SEPARATOR);
 
-        if (!file_exists($fullFrom)) {
-            return [false, 'File/folder sumber tidak ditemukan.'];
+        if (!file_exists($fullFrom) || is_link($fullFrom)) {
+            return [false, 'File/folder sumber tidak ditemukan atau tidak aman.'];
+        }
+
+        if (!is_dir($fullFrom) && !FileValidator::validateExtension($safeTo)) {
+            return [false, 'Jenis file tujuan tidak diizinkan.'];
         }
 
         if (file_exists($fullTo) && !$overwrite) {

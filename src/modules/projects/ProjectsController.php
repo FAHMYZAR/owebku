@@ -2,6 +2,7 @@
 namespace Modules\Projects;
 
 use Core\Controller;
+use Core\Services\SafePath;
 
 class ProjectsController extends Controller
 {
@@ -132,8 +133,13 @@ class ProjectsController extends Controller
             $this->json(['success' => false, 'message' => 'Project tidak ditemukan.'], 404);
         }
 
-        $workspace = $project['workspace_path'];
-        $published = $project['published_path'];
+        $workspace = rtrim($project['workspace_path'], DIRECTORY_SEPARATOR);
+        $published = rtrim($project['published_path'], DIRECTORY_SEPARATOR);
+        [$workspaceOk, $workspaceMessage] = SafePath::validateOwnedDirectory($workspace, app_config('workspace_path'));
+        [$publishedOk, $publishedMessage] = SafePath::validateOwnedDirectory($published, app_config('sites_path'));
+        if (!$workspaceOk || (!$publishedOk && file_exists($published))) {
+            $this->json(['success' => false, 'message' => $workspaceOk ? $publishedMessage : $workspaceMessage], 400);
+        }
 
         $this->projects->delete($id);
 
@@ -164,14 +170,19 @@ class ProjectsController extends Controller
      */
     private function deleteDir(?string $dirPath): void
     {
-        if (empty($dirPath) || !is_dir($dirPath)) {
+        if (empty($dirPath) || !is_dir($dirPath) || is_link($dirPath)) {
             return;
         }
 
-        $files = array_diff(scandir($dirPath), ['.', '..']);
-        foreach ($files as $file) {
+        foreach (array_diff(scandir($dirPath) ?: [], ['.', '..']) as $file) {
             $path = $dirPath . DIRECTORY_SEPARATOR . $file;
-            is_dir($path) ? $this->deleteDir($path) : unlink($path);
+            if (is_link($path)) {
+                unlink($path);
+            } elseif (is_dir($path)) {
+                $this->deleteDir($path);
+            } elseif (is_file($path)) {
+                unlink($path);
+            }
         }
         rmdir($dirPath);
     }

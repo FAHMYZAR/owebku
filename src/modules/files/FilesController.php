@@ -3,6 +3,7 @@ namespace Modules\Files;
 
 use Core\Controller;
 use Core\Services\FileMoveService;
+use Core\Services\FileValidator;
 use Core\Services\ProjectQuotaService;
 use Core\Services\SafePath;
 use Core\Services\ZipImportService;
@@ -111,10 +112,13 @@ class FilesController extends Controller
             $this->json(['success' => false, 'message' => 'Project tidak ditemukan.'], 404);
         }
 
-        $filePath = rtrim($project['workspace_path'], DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . ltrim(str_replace(['../', '..\\'], '', $path), DIRECTORY_SEPARATOR);
-        
-        if (!file_exists($filePath) || is_dir($filePath)) {
-            $this->json(['success' => false, 'message' => 'File tidak ditemukan.'], 404);
+        [$pathOk, $pathMessage, , $filePath] = SafePath::toProjectPath($project['workspace_path'], $path);
+        if (!$pathOk) {
+            $this->json(['success' => false, 'message' => $pathMessage], 400);
+        }
+
+        if (!is_file($filePath) || is_link($filePath) || !FileValidator::validateExtension($filePath)) {
+            $this->json(['success' => false, 'message' => 'File tidak ditemukan atau tidak diizinkan.'], 404);
         }
 
         $content = file_get_contents($filePath);
@@ -142,13 +146,20 @@ class FilesController extends Controller
             $this->json(['success' => false, 'message' => 'Project tidak ditemukan.'], 404);
         }
 
-        $filePath = rtrim($project['workspace_path'], DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . ltrim(str_replace(['../', '..\\'], '', $path), DIRECTORY_SEPARATOR);
-        
-        if (!file_exists($filePath) || is_dir($filePath)) {
-            $this->json(['success' => false, 'message' => 'File tidak ditemukan.'], 404);
+        [$pathOk, $pathMessage, $safePath, $filePath] = SafePath::toProjectPath($project['workspace_path'], $path);
+        if (!$pathOk) {
+            $this->json(['success' => false, 'message' => $pathMessage], 400);
         }
 
-        if (file_put_contents($filePath, $content) === false) {
+        if (!is_file($filePath) || is_link($filePath) || !FileValidator::validateExtension($safePath)) {
+            $this->json(['success' => false, 'message' => 'File tidak ditemukan atau tidak diizinkan.'], 404);
+        }
+
+        if (strlen($content) > 5 * 1024 * 1024) {
+            $this->json(['success' => false, 'message' => 'Isi file maksimal 5 MB.'], 400);
+        }
+
+        if (file_put_contents($filePath, $content, LOCK_EX) === false) {
             $this->json(['success' => false, 'message' => 'Gagal menulis ke file.'], 500);
         }
 
@@ -190,14 +201,17 @@ class FilesController extends Controller
             $this->json(['success' => false, 'message' => 'Project tidak ditemukan.'], 404);
         }
 
-        $safePath = ltrim(str_replace(['../', '..\\'], '', $path), DIRECTORY_SEPARATOR);
-        $fullPath = rtrim($project['workspace_path'], DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $safePath;
+        [$pathOk, $pathMessage, $safePath, $fullPath] = SafePath::toProjectPath($project['workspace_path'], $path);
+        if (!$pathOk) {
+            $this->json(['success' => false, 'message' => $pathMessage], 400);
+        }
 
-        if (!file_exists($fullPath)) {
+        if (!file_exists($fullPath) || is_link($fullPath)) {
             $this->json(['success' => false, 'message' => 'File tidak ditemukan.'], 404);
         }
 
-        if (is_dir($fullPath)) {
+        $wasDirectory = is_dir($fullPath);
+        if ($wasDirectory) {
             $this->deleteDir($fullPath);
             $this->projects->query("DELETE FROM project_files WHERE id_project = ? AND (relative_path = ? OR relative_path LIKE ?)", [$projectId, $safePath, $safePath . '/%']);
         } else {
@@ -207,7 +221,7 @@ class FilesController extends Controller
 
         $this->projects->query(
             "INSERT INTO activity_logs (id_user, id_project, action, description) VALUES (?, ?, ?, ?)",
-            [auth_user()['id_user'], $projectId, 'delete_file', "Hapus " . (is_dir($fullPath) ? 'folder' : 'file') . " {$safePath}"]
+            [auth_user()['id_user'], $projectId, 'delete_file', "Hapus " . ($wasDirectory ? 'folder' : 'file') . " {$safePath}"]
         );
 
         $this->projects->update($projectId, ['updated_at' => date('Y-m-d H:i:s')]);
@@ -235,8 +249,14 @@ class FilesController extends Controller
             $this->json(['success' => false, 'message' => 'Project tidak ditemukan.'], 404);
         }
 
-        $safePath = ltrim(str_replace(['../', '..\\'], '', $path), DIRECTORY_SEPARATOR);
-        $fullPath = rtrim($project['workspace_path'], DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $safePath;
+        [$pathOk, $pathMessage, $safePath, $fullPath] = SafePath::toProjectPath($project['workspace_path'], $path);
+        if (!$pathOk) {
+            $this->json(['success' => false, 'message' => $pathMessage], 400);
+        }
+
+        if (!$isFolder && !FileValidator::validateExtension($safePath)) {
+            $this->json(['success' => false, 'message' => 'Jenis file tidak diizinkan.'], 400);
+        }
 
         if (file_exists($fullPath)) {
             $this->json(['success' => false, 'message' => 'Nama sudah ada.'], 400);
@@ -292,14 +312,17 @@ class FilesController extends Controller
             $this->json(['success' => false, 'message' => 'Project tidak ditemukan.'], 404);
         }
 
-        $safeOldPath = ltrim(str_replace(['../', '..\\'], '', $oldPath), DIRECTORY_SEPARATOR);
-        $safeNewPath = ltrim(str_replace(['../', '..\\'], '', $newPath), DIRECTORY_SEPARATOR);
-        $workspace = rtrim($project['workspace_path'], DIRECTORY_SEPARATOR);
-        $fullOldPath = $workspace . DIRECTORY_SEPARATOR . $safeOldPath;
-        $fullNewPath = $workspace . DIRECTORY_SEPARATOR . $safeNewPath;
+        [$oldOk, $oldMessage, $safeOldPath, $fullOldPath] = SafePath::toProjectPath($project['workspace_path'], $oldPath);
+        [$newOk, $newMessage, $safeNewPath, $fullNewPath] = SafePath::toProjectPath($project['workspace_path'], $newPath);
+        if (!$oldOk || !$newOk) {
+            $this->json(['success' => false, 'message' => $oldOk ? $newMessage : $oldMessage], 400);
+        }
 
-        if (!file_exists($fullOldPath)) {
+        if (!file_exists($fullOldPath) || is_link($fullOldPath)) {
             $this->json(['success' => false, 'message' => 'File lama tidak ditemukan.'], 404);
+        }
+        if (!is_dir($fullOldPath) && !FileValidator::validateExtension($safeNewPath)) {
+            $this->json(['success' => false, 'message' => 'Jenis file tujuan tidak diizinkan.'], 400);
         }
         if (file_exists($fullNewPath)) {
             $this->json(['success' => false, 'message' => 'Nama tujuan sudah ada.'], 400);
@@ -367,6 +390,9 @@ class FilesController extends Controller
         if ($uploadedExt === 'zip') {
             $this->json(['success' => false, 'message' => 'ZIP harus diimport melalui ZIP Importer.'], 400);
         }
+        if (!is_uploaded_file($file['tmp_name']) || !FileValidator::validateExtension($uploadedName)) {
+            $this->json(['success' => false, 'message' => 'Jenis file upload tidak diizinkan.'], 400);
+        }
 
         if (($file['size'] ?? 0) > 10 * 1024 * 1024) {
             $this->json(['success' => false, 'message' => 'Ukuran file maksimal 10 MB.'], 400);
@@ -377,17 +403,44 @@ class FilesController extends Controller
             $this->json(['success' => false, 'message' => 'Project tidak ditemukan.'], 404);
         }
 
-        $safePath = ltrim(str_replace(['../', '..\\'], '', $path), DIRECTORY_SEPARATOR);
-        $fullPath = rtrim($project['workspace_path'], DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $safePath;
+        [$pathOk, $pathMessage, $safePath, $fullPath] = SafePath::toProjectPath($project['workspace_path'], $path);
+        if (!$pathOk || !FileValidator::validateExtension($safePath)) {
+            $this->json(['success' => false, 'message' => $pathOk ? 'Jenis file tujuan tidak diizinkan.' : $pathMessage], 400);
+        }
+        if (strtolower(pathinfo($safePath, PATHINFO_EXTENSION)) !== $uploadedExt) {
+            $this->json(['success' => false, 'message' => 'Ekstensi file upload dan tujuan harus sama.'], 400);
+        }
+
+        [$destinationOk, $destinationMessage] = SafePath::validateDestinationPath($fullPath, $project['workspace_path']);
+        if (!$destinationOk) {
+            $this->json(['success' => false, 'message' => $destinationMessage], 400);
+        }
+
+        $quarantineDir = app_config('storage_path') . DIRECTORY_SEPARATOR . 'quarantine';
+        if (!is_dir($quarantineDir) && !mkdir($quarantineDir, 0700, true) && !is_dir($quarantineDir)) {
+            $this->json(['success' => false, 'message' => 'Folder quarantine tidak tersedia.'], 500);
+        }
+        $quarantinePath = $quarantineDir . DIRECTORY_SEPARATOR . 'upload_' . bin2hex(random_bytes(16)) . '.' . $uploadedExt;
+        if (!move_uploaded_file($file['tmp_name'], $quarantinePath)) {
+            $this->json(['success' => false, 'message' => 'Gagal menyimpan upload sementara.'], 500);
+        }
+
+        [$contentOk, $contentMessage] = FileValidator::validateFileContent($quarantinePath);
+        if (!$contentOk) {
+            @unlink($quarantinePath);
+            $this->json(['success' => false, 'message' => $contentMessage], 400);
+        }
+
         $dir = dirname($fullPath);
-
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+            @unlink($quarantinePath);
+            $this->json(['success' => false, 'message' => 'Gagal membuat folder upload.'], 500);
         }
-
-        if (!move_uploaded_file($file['tmp_name'], $fullPath)) {
-            $this->json(['success' => false, 'message' => 'Gagal menyimpan upload.'], 500);
+        if (!rename($quarantinePath, $fullPath)) {
+            @unlink($quarantinePath);
+            $this->json(['success' => false, 'message' => 'Gagal memindahkan upload tervalidasi.'], 500);
         }
+        @chmod($fullPath, 0640);
 
         $name = basename($safePath);
         $ext = pathinfo($name, PATHINFO_EXTENSION);
@@ -508,10 +561,18 @@ class FilesController extends Controller
 
     private function deleteDir(string $dirPath): void
     {
-        $files = array_diff(scandir($dirPath), ['.', '..']);
-        foreach ($files as $file) {
+        if (!is_dir($dirPath) || is_link($dirPath)) {
+            return;
+        }
+        foreach (array_diff(scandir($dirPath) ?: [], ['.', '..']) as $file) {
             $path = $dirPath . DIRECTORY_SEPARATOR . $file;
-            is_dir($path) ? $this->deleteDir($path) : unlink($path);
+            if (is_link($path)) {
+                unlink($path);
+            } elseif (is_dir($path)) {
+                $this->deleteDir($path);
+            } elseif (is_file($path)) {
+                unlink($path);
+            }
         }
         rmdir($dirPath);
     }

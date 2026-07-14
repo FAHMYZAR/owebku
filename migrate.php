@@ -12,6 +12,8 @@ declare(strict_types=1);
  * and adds missing columns/indexes safely when possible.
  */
 
+require __DIR__ . '/src/config/environment.php';
+load_environment(__DIR__ . '/.env');
 $config = require __DIR__ . '/src/config/database.php';
 
 try {

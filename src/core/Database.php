@@ -32,8 +32,9 @@ class Database
                     PDO::ATTR_EMULATE_PREPARES   => false,
                 ]);
             } catch (PDOException $e) {
+                error_log('Database connection failed: ' . $e->getMessage());
                 http_response_code(500);
-                exit('Koneksi Database Gagal: ' . $e->getMessage());
+                exit('Layanan database sedang tidak tersedia.');
             }
         }
 

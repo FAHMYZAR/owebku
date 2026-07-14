@@ -53,11 +53,19 @@ class AuthController extends Controller
         verify_csrf();
 
         $email = trim($_POST['email'] ?? '');
-        $username = trim($_POST['username'] ?? '');
+        $username = strtolower(trim($_POST['username'] ?? ''));
         $password = $_POST['password'] ?? '';
 
-        if ($email === '' || $username === '' || $password === '') {
-            $_SESSION['flash_error'] = 'Semua field wajib diisi.';
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190) {
+            $_SESSION['flash_error'] = 'Alamat email tidak valid.';
+            redirect_to('register');
+        }
+        if (!preg_match('/^[a-z0-9][a-z0-9_-]{2,31}$/', $username)) {
+            $_SESSION['flash_error'] = 'Username harus 3-32 karakter dan hanya boleh berisi huruf kecil, angka, garis bawah, atau tanda hubung.';
+            redirect_to('register');
+        }
+        if (strlen($password) < 10 || strlen($password) > 4096) {
+            $_SESSION['flash_error'] = 'Password minimal 10 karakter.';
             redirect_to('register');
         }
 
@@ -81,6 +89,8 @@ class AuthController extends Controller
             'updated_at' => date('Y-m-d H:i:s'),
         ]);
 
+        session_regenerate_id(true);
+        $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
         $_SESSION['auth_user'] = [
             'id_user' => (int) $userId,
             'username' => $username,
@@ -99,7 +109,7 @@ class AuthController extends Controller
     {
         verify_csrf();
 
-        $username = trim($_POST['username'] ?? '');
+        $username = strtolower(trim($_POST['username'] ?? ''));
         $password = $_POST['password'] ?? '';
 
         if ($username === '' || $password === '') {
@@ -114,6 +124,8 @@ class AuthController extends Controller
             redirect_to('login');
         }
 
+        session_regenerate_id(true);
+        $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
         $_SESSION['auth_user'] = [
             'id_user' => (int) $user['id_user'],
             'username' => $user['username'],
@@ -174,8 +186,15 @@ class AuthController extends Controller
      */
     public function logout(): void
     {
-        unset($_SESSION['auth_user']);
-        $_SESSION['flash_success'] = 'Logout berhasil.';
+        require_auth();
+        verify_csrf();
+
+        $_SESSION = [];
+        if (ini_get('session.use_cookies')) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], (bool) $params['secure'], (bool) $params['httponly']);
+        }
+        session_destroy();
         redirect_to('login');
     }
 }

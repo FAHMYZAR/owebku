@@ -348,11 +348,18 @@ class ZipImportService
 
     private function deleteDir(string $dirPath): void
     {
-        if (!is_dir($dirPath)) return;
-        $files = array_diff(scandir($dirPath), ['.', '..']);
-        foreach ($files as $file) {
+        if (!is_dir($dirPath) || is_link($dirPath)) {
+            return;
+        }
+        foreach (array_diff(scandir($dirPath) ?: [], ['.', '..']) as $file) {
             $path = $dirPath . DIRECTORY_SEPARATOR . $file;
-            is_dir($path) ? $this->deleteDir($path) : unlink($path);
+            if (is_link($path)) {
+                unlink($path);
+            } elseif (is_dir($path)) {
+                $this->deleteDir($path);
+            } elseif (is_file($path)) {
+                unlink($path);
+            }
         }
         rmdir($dirPath);
     }
