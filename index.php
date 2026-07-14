@@ -18,7 +18,11 @@ spl_autoload_register(function ($class) {
 
     // Core namespace
     if (str_starts_with($class, 'Core\\')) {
-        $file = $base_dir . 'core/' . substr($class, 5) . '.php';
+        $parts = explode('\\', substr($class, 5));
+        if (count($parts) > 1) {
+            $parts[0] = strtolower($parts[0]);
+        }
+        $file = $base_dir . 'core/' . implode('/', $parts) . '.php';
         if (file_exists($file)) {
             require $file;
         }
